@@ -1,0 +1,9 @@
+﻿  Source.cpp
+C:\Users\CoolJamesKu\source\repos\Pet\Pet\method.h(112,20): warning C4018: '<': signed/unsigned mismatch
+C:\Users\CoolJamesKu\source\repos\Pet\Pet\method.h(145,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\CoolJamesKu\source\repos\Pet\Pet\method.h(153,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\CoolJamesKu\source\repos\Pet\Pet\method.h(159,21): warning C4018: '<': signed/unsigned mismatch
+C:\Users\CoolJamesKu\source\repos\Pet\Pet\Source.cpp(8,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+C:\Users\CoolJamesKu\source\repos\Pet\Pet\method.h(253): warning C4715: 'rate': not all control paths return a value
+C:\Users\CoolJamesKu\source\repos\Pet\Pet\method.h(239): warning C4715: 'judgeCase': not all control paths return a value
+  Pet.vcxproj -> C:\Users\CoolJamesKu\source\repos\Pet\Debug\Pet.exe
