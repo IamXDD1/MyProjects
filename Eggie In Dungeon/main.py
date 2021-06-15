@@ -8,6 +8,9 @@ import math
 # Pygame Setup
 pygame.init()
 
+clock = pygame.time.Clock()
+pygame.time.set_timer(pygame.USEREVENT, 1000)
+
 pixel_per_block = 64
 block_row = 9
 block_column = 15
@@ -157,6 +160,8 @@ status_group = pygame.sprite.Group()
 RED = (200, 0, 0)
 BLUE = (0, 0, 200)
 GOLD = (225, 60, 0)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
 
 
 class StatusHealth(pygame.sprite.Sprite):
@@ -323,6 +328,7 @@ class Player(pygame.sprite.Sprite):
 
         self.health = 100
         self.coin = 0
+        self.score = 0
 
         self.velocity_x = 0
         self.velocity_y = 0
@@ -449,7 +455,8 @@ class Slime(pygame.sprite.Sprite):
     SPEED = .018
     DAMAGE_PER_COLLISION = 10
     COIN_PER_KILL = 1
-    COUNT = 8
+    COUNT = 3
+    SCORE_PER_KILL = 3
 
     def __init__(self, x, y):
         super().__init__()
@@ -474,6 +481,7 @@ class Slime(pygame.sprite.Sprite):
             pygame.sprite.Sprite.remove(self, slime_group)
             if self.shot:
                 player.coin += 1
+                player.score += Slime.SCORE_PER_KILL
                 effect_group.add(Effect(
                     player.x - .5, player.y, 'coin'))
                 player.health += Player.HEALTH_REGEN_PER_KILL
@@ -547,6 +555,13 @@ for y in range(len(myMap)):
 
 
 gameRunning = True
+level = 1
+
+counter = 0
+
+
+mob_cnt = level * 3
+
 
 block_group.draw(screen)
 pygame.display.update()
@@ -559,17 +574,32 @@ def eliminateFireball():
     pygame.sprite.spritecollide(RightBorder, fireball_group, True)
 
 
+finalScore = 0
 while gameRunning:
+
+    level = int(counter / 60 + 1)
+    mob_cnt = level * 3
+    Slime.SPEED = .018 * (1 + (level / 10) * 3)
+
+    if Slime.COUNT < mob_cnt:
+        for iter in range(mob_cnt - Slime.COUNT):
+            Slime.generateSlime()
+        Slime.COUNT = mob_cnt
 
     if player.health <= 0:
         gameRunning = False
     # Detecting Events
     for event in pygame.event.get():
+
         if event.type == pygame.QUIT:
             gameRunning = False
             pygame.quit()
             sys.exit()
             break
+
+        if event.type == pygame.USEREVENT:
+            counter += 1
+            player.score += 1
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_w:
@@ -617,6 +647,12 @@ while gameRunning:
         "       " + str(int(player.mana)), True, BLUE)
     player_health = font.render(
         "       " + str(int(player.health)), True, RED)
+    game_level = font.render(
+        "Level " + str(level), True, WHITE)
+    time_passed = font.render(
+        "Time  " + str(counter), True, WHITE)
+    score_board = font.render(
+        "Score " + str(player.score), True, WHITE)
 
     block_group.draw(screen)
     potions_group.draw(screen)
@@ -630,17 +666,43 @@ while gameRunning:
     screen.blit(player_score, (textX, textY))
     screen.blit(mana_point, (textX, textY + fontSize * 1.5))
     screen.blit(player_health, (textX, textY + fontSize * 3))
+    screen.blit(game_level, (200, 10))
+    screen.blit(time_passed, (300, 10))
+    screen.blit(score_board, (400, 10))
     aim.draw(screen)
 
     pygame.display.update()
+    clock.tick(100)
 
 endGame = True
 
 screen.blit(menuBackground, (-480, -312))
 screen.blit(endGameTitle, (80, 100))
-pygame.display.update()
+
+
+myFile = open("saves/highestScore.txt", 'r+')
+
+higestScore = int(myFile.read())
+
+if player.score > higestScore:
+    myFile.write(str(player.score))
+    higestScore = player.score
+
+myFile.close()
+
+score_board = font.render(
+    "Final Score " + str(player.score), True, RED)
+
 
 while endGame:
+    rand_color = (random.randrange(0, 255), random.randrange(
+        0, 255), random.randrange(0, 255))
+    highest_score = font.render(
+        "Highest Score " + str(player.score), True, rand_color)
+    screen.blit(score_board, (400, 300))
+    screen.blit(highest_score, (400, 350))
+
+    pygame.display.update()
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             endGame = False
