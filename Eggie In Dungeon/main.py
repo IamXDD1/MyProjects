@@ -27,6 +27,7 @@ pygame.mouse.set_visible(False)
 
 fontSize = 20
 font = pygame.font.Font('freesansbold.ttf', fontSize)
+smallFont = pygame.font.Font('freesansbold.ttf', 10)
 
 textX = block_column * pixel_per_block - 95
 textY = block_row * pixel_per_block - 100
@@ -35,9 +36,12 @@ textY = block_row * pixel_per_block - 100
 
 playerImg = pygame.image.load("images/player.png")
 slimeImg = pygame.image.load("images/slime.png")
+bossImg = pygame.image.load("images/boss.png")
 tileImg = pygame.image.load("images/tile.png")
 fireballImg = pygame.image.load("images/fireball.png")
 aimImg = pygame.image.load("images/aim.png")
+
+bossImg = pygame.transform.scale2x(bossImg)
 
 potionImg1 = pygame.transform.scale2x(pygame.transform.scale2x(
     pygame.image.load("images/bluePotion/tile000.png")))
@@ -240,6 +244,9 @@ player_group = pygame.sprite.Group()
 effect_group = pygame.sprite.Group()
 status_group = pygame.sprite.Group()
 health_bar_group = pygame.sprite.Group()
+boss_group = pygame.sprite.Group()
+
+boss_standby = []
 
 # Classes
 
@@ -261,12 +268,17 @@ class StatusHealth(pygame.sprite.Sprite):
 
 
 class StatusCoin(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self):
         super().__init__()
-        self.x = x
-        self.y = y
+        self.x = 0
+        self.y = 0
         self.image = coinImg_temp
         self.rect = self.image.get_rect()
+        self.rect.topleft = (self.x, self.y)
+
+    def update(self):
+        self.x, self.y = (player.x + .5) * \
+            pixel_per_block, (player.y - .5) * pixel_per_block
         self.rect.topleft = (self.x, self.y)
 
 
@@ -274,12 +286,16 @@ class StatusPotion(pygame.sprite.Sprite):
 
     FRAME_RATE = .25
 
-    def __init__(self, x, y):
+    def __init__(self):
         super().__init__()
-        self.x = x
-        self.y = y
+        self.x, self.y = 0, 0
         self.image = potionImg1_org_temp
         self.rect = self.image.get_rect()
+        self.rect.topleft = (self.x, self.y)
+
+    def update(self):
+        self.x, self.y = (player.x) * \
+            pixel_per_block, (player.y - .5) * pixel_per_block
         self.rect.topleft = (self.x, self.y)
 
 
@@ -397,8 +413,10 @@ potions_group.add(Potion(3, 3))
 
 class Player(pygame.sprite.Sprite):
 
+    DAMAGE_PER_FIREBALL = 20
     SPEED = .08
-    MANA_PER_POTION = 1
+    MANA_PER_POTION = 2
+    STARTING_MANA = 0
     MANA_REGEN_PER_ITER = .01
     HEALTH_REGEN_PER_ITER = .01
 
@@ -419,7 +437,7 @@ class Player(pygame.sprite.Sprite):
         self.velocity_y = 0
         self.direction = 'left'
 
-        self.mana = 0
+        self.mana = Player.STARTING_MANA
 
         self.rect = self.image.get_rect()
         self.rect.topleft = (self.x * pixel_per_block,
@@ -542,6 +560,7 @@ class Slime(pygame.sprite.Sprite):
     COIN_PER_KILL = 1
     COUNT = 3
     SCORE_PER_KILL = 3
+    STARTING_HEALTH = 20
 
     def __init__(self, x, y):
         super().__init__()
@@ -549,7 +568,7 @@ class Slime(pygame.sprite.Sprite):
         self.y = y
 
         self.direction = 'left'
-        self.shot = False
+        self.health = Slime.STARTING_HEALTH
         self.collided = False
 
         self.image = slimeImg
@@ -560,11 +579,10 @@ class Slime(pygame.sprite.Sprite):
 
         if pygame.sprite.spritecollide(self, fireball_group, True):
             self.collided = True
-            self.shot = True
+            self.health -= Player.DAMAGE_PER_FIREBALL
 
-        if self.collided:
-            pygame.sprite.Sprite.remove(self, slime_group)
-            if self.shot:
+        if self.health <= 0:
+            if self.collided:
                 player.coin += 1
                 player.score += Slime.SCORE_PER_KILL
                 effect_group.add(Effect(
@@ -575,8 +593,10 @@ class Slime(pygame.sprite.Sprite):
                 player.mana += Player.MANA_REGEN_PER_KILL
                 effect_group.add(Effect(
                     player.x + .5, player.y, 'mana'))
+            pygame.sprite.Sprite.remove(self, slime_group)
             slimeDeath.play()
             Slime.generateSlime()
+            return
 
         deltaX = (player.x + .5) - self.x
         deltaY = (player.y + .5) - self.y
@@ -605,7 +625,7 @@ class Slime(pygame.sprite.Sprite):
             player.health -= Slime.DAMAGE_PER_COLLISION / 2
             effect_group.add(Effect(
                 player.x, player.y, 'broken_heart'))
-            self.collided = True
+            self.health = 0
 
     @staticmethod
     def generateSlime():
@@ -613,6 +633,76 @@ class Slime(pygame.sprite.Sprite):
         rand_y = random.randrange(0, block_row)
 
         slime_group.add(Slime(rand_x, rand_y))
+
+
+class Boss(pygame.sprite.Sprite):
+
+    SPEED = .05
+    DAMAGE_PER_COLLISION = 5
+    COIN_PER_KILL = 50
+    SCORE_PER_KILL = 150
+    STARTING_HEALTH = 1200
+
+    def __init__(self, x, y):
+        super().__init__()
+        self.x = x
+        self.y = y
+        self.health = Boss.STARTING_HEALTH
+
+        self.direction = 'left'
+        self.collided = False
+
+        self.image = bossImg
+        self.rect = self.image.get_rect()
+        self.rect.center = (self.x * pixel_per_block, self.y * pixel_per_block)
+
+    def update(self):
+
+        if pygame.sprite.spritecollide(self, fireball_group, True):
+            self.collided = True
+
+        if self.collided:
+            self.health -= Player.DAMAGE_PER_FIREBALL
+            self.collided = False
+
+        deltaX = (player.x + .5) - self.x
+        deltaY = (player.y + .5) - self.y
+
+        base = (deltaX ** 2 + deltaY ** 2) ** .5
+
+        velocity_x = (deltaX / base) * Slime.SPEED
+        velocity_y = (deltaY / base) * Slime.SPEED
+
+        if velocity_x > 0:
+            self.direction = 'right'
+        elif velocity_x < 0:
+            self.direction = 'left'
+
+        if self.direction == 'right':
+            self.image = pygame.transform.flip(bossImg, True, False)
+        else:
+            self.image = bossImg
+
+        self.x += velocity_x
+        self.y += velocity_y
+
+        self.rect.center = (self.x * pixel_per_block, self.y * pixel_per_block)
+
+        if self.rect.colliderect(player.rect):
+            player.health -= Boss.DAMAGE_PER_COLLISION / 2
+            effect_group.add(Effect(
+                player.x, player.y, 'broken_heart'))
+
+        if self.health <= 0:
+            pygame.sprite.Sprite.remove(self, boss_group)
+            removeBossHealthBar()
+            player.coin += Boss.COIN_PER_KILL
+            player.score += Boss.SCORE_PER_KILL
+            effect_group.add(Effect(
+                player.x - .5, player.y, 'coin'))
+
+
+boss = Boss(random.randrange(0, block_column), random.randrange(0, block_row))
 
 
 class PlayerHealthBar(pygame.sprite.Sprite):
@@ -715,7 +805,111 @@ class PlayerHealthBar(pygame.sprite.Sprite):
         self.rect.topleft = (self.x, self.y)
 
 
+class BossHealthBar(pygame.sprite.Sprite):
+
+    def __init__(self):
+        super().__init__()
+        self.x = (boss.x + .1) * pixel_per_block
+        self.y = (boss.y - .25) * pixel_per_block
+
+        self.image = healthBar_1000
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (self.x, self.y)
+
+    def update(self):
+        if boss.health >= Boss.STARTING_HEALTH * 100 * .01:
+            self.image = healthBar_1000
+        elif boss.health >= Boss.STARTING_HEALTH * 97.5 * .01:
+            self.image = healthBar_975
+        elif boss.health >= Boss.STARTING_HEALTH * 95 * .01:
+            self.image = healthBar_950
+        elif boss.health >= Boss.STARTING_HEALTH * 92.5 * .01:
+            self.image = healthBar_925
+        elif boss.health >= Boss.STARTING_HEALTH * 90 * .01:
+            self.image = healthBar_900
+        elif boss.health >= Boss.STARTING_HEALTH * 87.5 * .01:
+            self.image = healthBar_875
+        elif boss.health >= Boss.STARTING_HEALTH * 85 * .01:
+            self.image = healthBar_850
+        elif boss.health >= Boss.STARTING_HEALTH * 82.5 * .01:
+            self.image = healthBar_825
+        elif boss.health >= Boss.STARTING_HEALTH * 80 * .01:
+            self.image = healthBar_800
+        elif boss.health >= Boss.STARTING_HEALTH * 77.5 * .01:
+            self.image = healthBar_775
+        elif boss.health >= Boss.STARTING_HEALTH * 75 * .01:
+            self.image = healthBar_750
+        elif boss.health >= Boss.STARTING_HEALTH * 72.5 * .01:
+            self.image = healthBar_725
+        elif boss.health >= Boss.STARTING_HEALTH * 70 * .01:
+            self.image = healthBar_700
+        elif boss.health >= Boss.STARTING_HEALTH * 67.5 * .01:
+            self.image = healthBar_675
+        elif boss.health >= Boss.STARTING_HEALTH * 65 * .01:
+            self.image = healthBar_650
+        elif boss.health >= Boss.STARTING_HEALTH * 62.5 * .01:
+            self.image = healthBar_625
+        elif boss.health >= Boss.STARTING_HEALTH * 60 * .01:
+            self.image = healthBar_600
+        elif boss.health >= Boss.STARTING_HEALTH * 57.5 * .01:
+            self.image = healthBar_575
+        elif boss.health >= Boss.STARTING_HEALTH * 55 * .01:
+            self.image = healthBar_550
+        elif boss.health >= Boss.STARTING_HEALTH * 52.5 * .01:
+            self.image = healthBar_525
+        elif boss.health >= Boss.STARTING_HEALTH * 50 * .01:
+            self.image = healthBar_500
+        elif boss.health >= Boss.STARTING_HEALTH * 47.5 * .01:
+            self.image = healthBar_475
+        elif boss.health >= Boss.STARTING_HEALTH * 45 * .01:
+            self.image = healthBar_450
+        elif boss.health >= Boss.STARTING_HEALTH * 42.5 * .01:
+            self.image = healthBar_425
+        elif boss.health >= Boss.STARTING_HEALTH * 40 * .01:
+            self.image = healthBar_400
+        elif boss.health >= Boss.STARTING_HEALTH * 37.5 * .01:
+            self.image = healthBar_375
+        elif boss.health >= Boss.STARTING_HEALTH * 35 * .01:
+            self.image = healthBar_350
+        elif boss.health >= Boss.STARTING_HEALTH * 32.5 * .01:
+            self.image = healthBar_325
+        elif boss.health >= Boss.STARTING_HEALTH * 30 * .01:
+            self.image = healthBar_300
+        elif boss.health >= Boss.STARTING_HEALTH * 27.5 * .01:
+            self.image = healthBar_275
+        elif boss.health >= Boss.STARTING_HEALTH * 25 * .01:
+            self.image = healthBar_250
+        elif boss.health >= Boss.STARTING_HEALTH * 22.5 * .01:
+            self.image = healthBar_225
+        elif boss.health >= Boss.STARTING_HEALTH * 20 * .01:
+            self.image = healthBar_200
+        elif boss.health >= Boss.STARTING_HEALTH * 17.5 * .01:
+            self.image = healthBar_175
+        elif boss.health >= Boss.STARTING_HEALTH * 15 * .01:
+            self.image = healthBar_150
+        elif boss.health >= Boss.STARTING_HEALTH * 12.5 * .01:
+            self.image = healthBar_125
+        elif boss.health >= Boss.STARTING_HEALTH * 10 * .01:
+            self.image = healthBar_100
+        elif boss.health >= Boss.STARTING_HEALTH * 7.5 * .01:
+            self.image = healthBar_75
+        elif boss.health >= Boss.STARTING_HEALTH * 5 * .01:
+            self.image = healthBar_50
+        elif boss.health >= Boss.STARTING_HEALTH * 2.5 * .01:
+            self.image = healthBar_25
+        elif boss.health >= Boss.STARTING_HEALTH * 0 * .01:
+            self.image = healthBar_0
+
+        self.x = (boss.x - .3) * pixel_per_block
+        self.y = (boss.y - .5) * pixel_per_block
+        self.rect.topleft = (self.x, self.y)
+
+
+boss_healtBar = BossHealthBar()
+
 # Instances
+
+
 mouse = Mouse(aimImg)
 aim = pygame.sprite.Group()
 aim.add(mouse)
@@ -729,8 +923,8 @@ for iter in range(Slime.COUNT):
 # status_background = StatusBackground((block_column - 2) *
 #                  pixel_per_block, (block_row - 2) * pixel_per_block)
 
-status_group.add(StatusPotion(textX, textY + fontSize * 1.5))
-status_group.add(StatusCoin(textX, textY))
+status_group.add(StatusPotion())
+status_group.add(StatusCoin())
 # status_group.add(StatusHealth(textX, textY + fontSize * 3))
 
 for y in range(len(myMap)):
@@ -746,9 +940,7 @@ level = 1
 
 counter = 0
 
-
 mob_cnt = level * 3
-
 
 block_group.draw(screen)
 pygame.display.update()
@@ -761,10 +953,18 @@ def eliminateFireball():
     pygame.sprite.spritecollide(RightBorder, fireball_group, True)
 
 
+def removeBossHealthBar():
+    pygame.sprite.Sprite.remove(boss_healtBar, health_bar_group)
+
+
+SECOND_PER_LEVEL = 30
+
 finalScore = 0
 while gameRunning:
 
-    level = int(counter / 60 + 1)
+    Boss.STARTING_HEALTH = (level / 3) * 1200
+
+    level = int(counter / SECOND_PER_LEVEL + 1)
     mob_cnt = level * 3
     Slime.SPEED = .018 * (1 + (level / 10) * 3)
 
@@ -772,6 +972,14 @@ while gameRunning:
         for iter in range(mob_cnt - Slime.COUNT):
             Slime.generateSlime()
         Slime.COUNT = mob_cnt
+        if level % 3 == 0:
+            new_boss = Boss(random.randrange(0, block_column),
+                            random.randrange(0, block_row))
+            boss = new_boss
+            boss.health = Boss.STARTING_HEALTH
+            boss_group.add(boss)
+            boss_healtBar = BossHealthBar()
+            health_bar_group.add(boss_healtBar)
 
     if player.health <= 0:
         gameRunning = False
@@ -827,13 +1035,14 @@ while gameRunning:
     slime_group.update()
     status_group.update()
     health_bar_group.update()
+    boss_group.update()
     eliminateFireball()
 
-    player_score = font.render(
+    player_coin = smallFont.render(
         "       " + str(player.coin), True, GOLD)
-    mana_point = font.render(
+    mana_point = smallFont.render(
         "       " + str(int(player.mana)), True, BLUE)
-    player_health = font.render(
+    player_health = smallFont.render(
         "       " + str(int(player.health)), True, RED)
     game_level = font.render(
         "Level " + str(level), True, WHITE)
@@ -845,16 +1054,20 @@ while gameRunning:
     block_group.draw(buffer_surface)
     potions_group.draw(buffer_surface)
     slime_group.draw(buffer_surface)
+    boss_group.draw(buffer_surface)
     player_group.draw(buffer_surface)
     effect_group.update()
     fireball_group.draw(buffer_surface)
     health_bar_group.draw(buffer_surface)
-    buffer_surface.blit(statusBackground, ((block_column - 2) *
-                                           pixel_per_block, (block_row - 2) * pixel_per_block))
+    # buffer_surface.blit(statusBackground, ((block_column - 2) *
+    #                                        pixel_per_block, (block_row - 2) * pixel_per_block))
     status_group.draw(buffer_surface)
-    buffer_surface.blit(player_score, (textX, textY))
-    buffer_surface.blit(mana_point, (textX, textY + fontSize * 1.5))
-    # buffer_surface.blit(player_health, (textX, textY + fontSize * 3))
+    buffer_surface.blit(player_coin, ((player.x + .45) *
+                                      pixel_per_block, (player.y - .45) * pixel_per_block))
+    buffer_surface.blit(mana_point, ((player.x - .1) *
+                                     pixel_per_block, (player.y - .45) * pixel_per_block))
+    buffer_surface.blit(player_health, ((player.x - .5) *
+                        pixel_per_block, (player.y - .25) * pixel_per_block))
     buffer_surface.blit(game_level, (200, 10))
     buffer_surface.blit(time_passed, (300, 10))
     buffer_surface.blit(score_board, (400, 10))
