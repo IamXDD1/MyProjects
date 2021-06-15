@@ -19,6 +19,8 @@ screen_width = block_column * pixel_per_block  # 15 * 64 = 960
 screen_height = block_row * pixel_per_block  # 9 * 64 = 576
 
 screen = pygame.display.set_mode((screen_width, screen_height))
+buffer_surface = pygame.Surface(
+    (pixel_per_block * block_column, pixel_per_block * block_row))
 pygame.display.set_caption("Dungeon")
 pygame.display.set_icon(pygame.image.load("images/slime.png"))
 pygame.mouse.set_visible(False)
@@ -72,19 +74,78 @@ coinImg_temp = pygame.image.load("images/coin.png")
 heartImg_temp = pygame.image.load("images/heart.png")
 broken_heartImg_temp = pygame.image.load("images/broken_heart.png")
 
+healthBar_1000 = pygame.image.load("images/healthBar/healthBar-100%.png")
+healthBar_975 = pygame.image.load("images/healthBar/healthBar-97.5%.png")
+healthBar_950 = pygame.image.load("images/healthBar/healthBar-95%.png")
+healthBar_925 = pygame.image.load("images/healthBar/healthBar-92.5%.png")
+healthBar_900 = pygame.image.load("images/healthBar/healthBar-90%.png")
+healthBar_875 = pygame.image.load("images/healthBar/healthBar-87.5%.png")
+healthBar_850 = pygame.image.load("images/healthBar/healthBar-85%.png")
+healthBar_825 = pygame.image.load("images/healthBar/healthBar-82.5%.png")
+healthBar_800 = pygame.image.load("images/healthBar/healthBar-80%.png")
+healthBar_775 = pygame.image.load("images/healthBar/healthBar-77.5%.png")
+healthBar_750 = pygame.image.load("images/healthBar/healthBar-75%.png")
+healthBar_725 = pygame.image.load("images/healthBar/healthBar-72.5%.png")
+healthBar_700 = pygame.image.load("images/healthBar/healthBar-70%.png")
+healthBar_675 = pygame.image.load("images/healthBar/healthBar-67.5%.png")
+healthBar_650 = pygame.image.load("images/healthBar/healthBar-65%.png")
+healthBar_625 = pygame.image.load("images/healthBar/healthBar-62.5%.png")
+healthBar_600 = pygame.image.load("images/healthBar/healthBar-60%.png")
+healthBar_575 = pygame.image.load("images/healthBar/healthBar-57.5%.png")
+healthBar_550 = pygame.image.load("images/healthBar/healthBar-55%.png")
+healthBar_525 = pygame.image.load("images/healthBar/healthBar-52.5%.png")
+healthBar_500 = pygame.image.load("images/healthBar/healthBar-50%.png")
+healthBar_475 = pygame.image.load("images/healthBar/healthBar-47.5%.png")
+healthBar_450 = pygame.image.load("images/healthBar/healthBar-45%.png")
+healthBar_425 = pygame.image.load("images/healthBar/healthBar-42.5%.png")
+healthBar_400 = pygame.image.load("images/healthBar/healthBar-40%.png")
+healthBar_375 = pygame.image.load("images/healthBar/healthBar-37.5%.png")
+healthBar_350 = pygame.image.load("images/healthBar/healthBar-35%.png")
+healthBar_325 = pygame.image.load("images/healthBar/healthBar-32.5%.png")
+healthBar_300 = pygame.image.load("images/healthBar/healthBar-30%.png")
+healthBar_275 = pygame.image.load("images/healthBar/healthBar-27.5%.png")
+healthBar_250 = pygame.image.load("images/healthBar/healthBar-25%.png")
+healthBar_225 = pygame.image.load("images/healthBar/healthBar-22.5%.png")
+healthBar_200 = pygame.image.load("images/healthBar/healthBar-20%.png")
+healthBar_175 = pygame.image.load("images/healthBar/healthBar-17.5%.png")
+healthBar_150 = pygame.image.load("images/healthBar/healthBar-15%.png")
+healthBar_125 = pygame.image.load("images/healthBar/healthBar-12.5%.png")
+healthBar_100 = pygame.image.load("images/healthBar/healthBar-10%.png")
+healthBar_75 = pygame.image.load("images/healthBar/healthBar-7.5%.png")
+healthBar_50 = pygame.image.load("images/healthBar/healthBar-5%.png")
+healthBar_25 = pygame.image.load("images/healthBar/healthBar-2.5%.png")
+healthBar_0 = pygame.image.load("images/healthBar/healthBar-0%.png")
+
+
 menuBackground = pygame.image.load("images/menuBackground.jpg")
 statusBackground = pygame.image.load("images/planks.png")
 
 endGameTitle = pygame.image.load("images/endGame.png")
 endGameTitle = pygame.transform.scale2x(endGameTitle)
 
-gameTitle1 = pygame.image.load("images/dungeonTitle1.png")
+gameTitle1 = pygame.image.load("images/gameTitle2_1.png")
 gameTitle1 = pygame.transform.scale2x(gameTitle1)
 
-gameTitle2 = pygame.image.load("images/dungeonTitle2.png")
+gameTitle2 = pygame.image.load("images/gameTitle2_2.png")
 gameTitle2 = pygame.transform.scale2x(gameTitle2)
 
 tileImg = pygame.transform.scale2x(tileImg)
+
+howToPlay_1 = pygame.image.load("images/howToPlay_1.png")
+howToPlay_2 = pygame.image.load("images/howToPlay_2.png")
+howToPlay_3 = pygame.image.load("images/howToPlay_3.png")
+howToPlay_4 = pygame.image.load("images/howToPlay_4.png")
+howToPlay_5 = pygame.image.load("images/howToPlay_5.png")
+howToPlay_6 = pygame.image.load("images/howToPlay_6.png")
+
+howToPlay_1 = pygame.transform.scale2x(howToPlay_1)
+howToPlay_2 = pygame.transform.scale2x(howToPlay_2)
+howToPlay_3 = pygame.transform.scale2x(howToPlay_3)
+howToPlay_4 = pygame.transform.scale2x(howToPlay_4)
+howToPlay_5 = pygame.transform.scale2x(howToPlay_5)
+howToPlay_6 = pygame.transform.scale2x(howToPlay_6)
+
+HOW_TO_PLAY_BG = (66, 66, 66)
 
 # Audio
 
@@ -123,6 +184,8 @@ RightBorder = Border(block_column * pixel_per_block,
 mainMenu = True
 MENU_FRAME_RATE = .1
 currSprite = 0
+howToPlay_counter = 0
+BG = howToPlay_1
 while mainMenu:
     currSprite += MENU_FRAME_RATE
 
@@ -140,6 +203,28 @@ while mainMenu:
             if event.key == pygame.K_a:
                 mainMenu = False
                 clickButtonSound.play()
+            if event.key == pygame.K_h:
+                howToPlay = True
+
+                while howToPlay:
+                    howToPlay_counter += 1
+                    howToPlayBG = [howToPlay_1, howToPlay_2,
+                                   howToPlay_3, howToPlay_4, howToPlay_5, howToPlay_6]
+                    screen.fill(HOW_TO_PLAY_BG)
+
+                    if howToPlay_counter > 9:
+                        howToPlay_counter = 0
+                        BG = random.choice(howToPlayBG)
+
+                    screen.blit(BG,  (80, 100))
+                    pygame.display.update()
+                    for inner_event in pygame.event.get():
+                        if inner_event.type == pygame.KEYDOWN:
+                            howToPlay = False
+                        if inner_event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit()
+
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
@@ -154,6 +239,7 @@ fireball_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 effect_group = pygame.sprite.Group()
 status_group = pygame.sprite.Group()
+health_bar_group = pygame.sprite.Group()
 
 # Classes
 
@@ -226,8 +312,7 @@ class Effect(pygame.sprite.Sprite):
         self.y -= Effect.SPEED
         self.rect.topleft = (self.x, self.y)
         self.timer += 1
-        screen.blit(self.image, self.rect.topleft)
-        pygame.display.update()
+        buffer_surface.blit(self.image, self.rect.topleft)
 
         self.image.set_alpha(225 * (1 - self.timer / Effect.DURATION))
 
@@ -530,11 +615,113 @@ class Slime(pygame.sprite.Sprite):
         slime_group.add(Slime(rand_x, rand_y))
 
 
+class PlayerHealthBar(pygame.sprite.Sprite):
+
+    def __init__(self):
+        super().__init__()
+        self.x = (player.x + .1) * pixel_per_block
+        self.y = (player.y - .25) * pixel_per_block
+
+        self.image = healthBar_1000
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (self.x, self.y)
+
+    def update(self):
+        if player.health >= 100:
+            self.image = healthBar_1000
+        elif player.health >= 97.5:
+            self.image = healthBar_975
+        elif player.health >= 95:
+            self.image = healthBar_950
+        elif player.health >= 92.5:
+            self.image = healthBar_925
+        elif player.health >= 90:
+            self.image = healthBar_900
+        elif player.health >= 87.5:
+            self.image = healthBar_875
+        elif player.health >= 85:
+            self.image = healthBar_850
+        elif player.health >= 82.5:
+            self.image = healthBar_825
+        elif player.health >= 80:
+            self.image = healthBar_800
+        elif player.health >= 77.5:
+            self.image = healthBar_775
+        elif player.health >= 75:
+            self.image = healthBar_750
+        elif player.health >= 72.5:
+            self.image = healthBar_725
+        elif player.health >= 70:
+            self.image = healthBar_700
+        elif player.health >= 67.5:
+            self.image = healthBar_675
+        elif player.health >= 65:
+            self.image = healthBar_650
+        elif player.health >= 62.5:
+            self.image = healthBar_625
+        elif player.health >= 60:
+            self.image = healthBar_600
+        elif player.health >= 57.5:
+            self.image = healthBar_575
+        elif player.health >= 55:
+            self.image = healthBar_550
+        elif player.health >= 52.5:
+            self.image = healthBar_525
+        elif player.health >= 50:
+            self.image = healthBar_500
+        elif player.health >= 47.5:
+            self.image = healthBar_475
+        elif player.health >= 45:
+            self.image = healthBar_450
+        elif player.health >= 42.5:
+            self.image = healthBar_425
+        elif player.health >= 40:
+            self.image = healthBar_400
+        elif player.health >= 37.5:
+            self.image = healthBar_375
+        elif player.health >= 35:
+            self.image = healthBar_350
+        elif player.health >= 32.5:
+            self.image = healthBar_325
+        elif player.health >= 30:
+            self.image = healthBar_300
+        elif player.health >= 27.5:
+            self.image = healthBar_275
+        elif player.health >= 25:
+            self.image = healthBar_250
+        elif player.health >= 22.5:
+            self.image = healthBar_225
+        elif player.health >= 20:
+            self.image = healthBar_200
+        elif player.health >= 17.5:
+            self.image = healthBar_175
+        elif player.health >= 15:
+            self.image = healthBar_150
+        elif player.health >= 12.5:
+            self.image = healthBar_125
+        elif player.health >= 10:
+            self.image = healthBar_100
+        elif player.health >= 7.5:
+            self.image = healthBar_75
+        elif player.health >= 5:
+            self.image = healthBar_50
+        elif player.health >= 2.5:
+            self.image = healthBar_25
+        elif player.health >= 0:
+            self.image = healthBar_0
+
+        self.x = (player.x + .1) * pixel_per_block
+        self.y = (player.y - .25) * pixel_per_block
+        self.rect.topleft = (self.x, self.y)
+
+
 # Instances
 mouse = Mouse(aimImg)
 aim = pygame.sprite.Group()
 aim.add(mouse)
 
+playerHealthBar = PlayerHealthBar()
+health_bar_group.add(playerHealthBar)
 
 for iter in range(Slime.COUNT):
     Slime.generateSlime()
@@ -544,7 +731,7 @@ for iter in range(Slime.COUNT):
 
 status_group.add(StatusPotion(textX, textY + fontSize * 1.5))
 status_group.add(StatusCoin(textX, textY))
-status_group.add(StatusHealth(textX, textY + fontSize * 3))
+# status_group.add(StatusHealth(textX, textY + fontSize * 3))
 
 for y in range(len(myMap)):
     for x in range(len(myMap[y])):
@@ -639,6 +826,7 @@ while gameRunning:
     fireball_group.update()
     slime_group.update()
     status_group.update()
+    health_bar_group.update()
     eliminateFireball()
 
     player_score = font.render(
@@ -654,22 +842,25 @@ while gameRunning:
     score_board = font.render(
         "Score " + str(player.score), True, WHITE)
 
-    block_group.draw(screen)
-    potions_group.draw(screen)
-    slime_group.draw(screen)
-    player_group.draw(screen)
+    block_group.draw(buffer_surface)
+    potions_group.draw(buffer_surface)
+    slime_group.draw(buffer_surface)
+    player_group.draw(buffer_surface)
     effect_group.update()
-    fireball_group.draw(screen)
-    screen.blit(statusBackground, ((block_column - 2) *
-                                   pixel_per_block, (block_row - 2) * pixel_per_block))
-    status_group.draw(screen)
-    screen.blit(player_score, (textX, textY))
-    screen.blit(mana_point, (textX, textY + fontSize * 1.5))
-    screen.blit(player_health, (textX, textY + fontSize * 3))
-    screen.blit(game_level, (200, 10))
-    screen.blit(time_passed, (300, 10))
-    screen.blit(score_board, (400, 10))
-    aim.draw(screen)
+    fireball_group.draw(buffer_surface)
+    health_bar_group.draw(buffer_surface)
+    buffer_surface.blit(statusBackground, ((block_column - 2) *
+                                           pixel_per_block, (block_row - 2) * pixel_per_block))
+    status_group.draw(buffer_surface)
+    buffer_surface.blit(player_score, (textX, textY))
+    buffer_surface.blit(mana_point, (textX, textY + fontSize * 1.5))
+    # buffer_surface.blit(player_health, (textX, textY + fontSize * 3))
+    buffer_surface.blit(game_level, (200, 10))
+    buffer_surface.blit(time_passed, (300, 10))
+    buffer_surface.blit(score_board, (400, 10))
+    aim.draw(buffer_surface)
+
+    screen.blit(buffer_surface, (0, 0))
 
     pygame.display.update()
     clock.tick(100)
